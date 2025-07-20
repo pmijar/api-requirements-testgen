@@ -1,0 +1,8 @@
+1. The system must allow users to register with their full name, email address, and password.
+2. Email address must be unique — duplicate registrations using the same email should be rejected.
+3. Password must be at least 8 characters long.
+4. If any required field is missing, the registration should fail with a 400 Bad Request.
+5. Upon successful registration, the API should return a 201 Created status with a user ID in the response.
+6. Passwords must not be returned in the response.
+7. Attempting to register with an already used email should return a 409 Conflict.
+8. The email field must follow a valid email format.

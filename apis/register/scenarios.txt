@@ -1,0 +1,8 @@
+1. Test if the system allows user registration with valid full name, email address, and password.
+2. Test if the system rejects duplicate registrations using the same email address.
+3. Test if the system rejects a password that is less than 8 characters long.
+4. Test if the system returns a 400 Bad Request when any required field is missing during registration.
+5. Test if the system returns a 201 Created status with a user ID in the response upon successful registration.
+6. Test if the system does not return passwords in the response.
+7. Test if the system returns a 409 Conflict when attempting to register with an already used email.
+8. Test if the system rejects an invalid email format in the email field.

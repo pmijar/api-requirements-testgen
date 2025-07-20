@@ -1,0 +1,3 @@
+Users must be able to log in with email and password.
+Login must return a 200 OK response if successful.
+Invalid credentials must return a 401 Unauthorized.

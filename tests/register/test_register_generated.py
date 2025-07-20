@@ -1,177 +1,304 @@
 import requests
 
-BASE_URL = 'http://localhost:8000'
+import pytest
 
-# Here is a Python pytest function using the requests library to test the user registration endpoint:
+import os
 
+from dotenv import load_dotenv
+
+
+
+load_dotenv()  # Load environment variables from .env
+
+BASE_URL = os.getenv('BASE_URL', 'http://localhost:8000')
+
+
+
+def get_endpoint_url(path):
+
+    """Helper to get the full endpoint URL from BASE_URL and a path (e.g. '/login')."""
+
+    return f'{BASE_URL.rstrip('/')}/{path.lstrip('/')}';
+
+
+
+# The 'access_token' fixture is provided by conftest.py and reads sensitive values from your .env file.
+
+# Do NOT store secrets in source code. Use a .env file (not committed to git) for sensitive info.
+
+# All test functions below require 'access_token' as a parameter.
+
+# Here is a Python pytest test function using the requests library:
+# 
 # ```python
 import pytest
 import requests
 import json
+# 
+def test_user_registration(access_token):
+    # Construct the endpoint URL
+    endpoint_url = get_endpoint_url('/register')
 
-def test_user_registration():
-    url = "http://localhost:8000/register"  # replace with your actual URL
-    headers = {'Content-Type': 'application/json'}
-    data = {
-        "email": "testuser@example.com",
-        "password": "testpassword"
+    # Define the headers
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json'
     }
-    response = requests.post(url, headers=headers, data=json.dumps(data))
-    assert response.status_code == 201, "Registration failed"
-    assert response.json()["email"] == data["email"], "Email mismatch"
+# 
+    # Define the payload
+    payload = {
+        'email': 'testuser@example.com',
+        'password': 'testpassword'
+    }
+# 
+    # Send the POST request
+    response = requests.post(endpoint_url, headers=headers, data=json.dumps(payload))
+# 
+    # Assert that the status code is 201 (Registration successful)
+    assert response.status_code == 201, f'Expected status code 201, but got {response.status_code}'
+# 
+    # Assert that the response body contains the expected values
+    response_body = response.json()
+    assert 'email' in response_body, 'Response body does not contain email'
+    assert response_body['email'] == payload['email'], f"Expected email '{payload['email']}', but got '{response_body['email']}'"
 # ```
-
-# This test function sends a POST request to the /register endpoint with a JSON payload containing a valid email and password. It then checks if the response status code is 201 (indicating successful registration) and if the returned email matches the one sent in the request.
-
-# Please replace the URL with your actual server URL. Also, if the server returns a different response structure, you might need to adjust the assertion that checks the email in the response.
+# 
+# This test function sends a POST request to the '/register' endpoint with the required email and password in the request body. It then checks that the response status code is 201 (indicating successful registration) and that the response body contains the expected email.
+# 
+# Please note that the test scenario mentioned testing with full name, email address, and password, but the OpenAPI spec only includes fields for email and password. Therefore, the test function only includes these two fields in the request body. If the API actually requires a full name for registration, you would need to update the OpenAPI spec and the test function accordingly.
 
 # Here is a Python pytest test function using the requests library:
-
+# 
 # ```python
 import pytest
 import requests
+import json
+# 
+def test_duplicate_registration(access_token):
+    # Construct the endpoint URL
+    endpoint_url = get_endpoint_url('/register')
 
-def test_duplicate_registration():
-    url = "http://localhost:5000/register"
-    headers = {'Content-Type': 'application/json'}
-    data = {"email": "test@example.com", "password": "password123"}
+    # Define the headers
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json'
+    }
+# 
+    # Define the payload
+    payload = {
+        'email': 'test@example.com',
+        'password': 'testpassword'
+    }
+# 
+    # Send the first POST request
+    response = requests.post(endpoint_url, headers=headers, data=json.dumps(payload))
+    assert response.status_code == 201, 'First registration should be successful'
+# 
+    # Send the second POST request with the same email
+    response = requests.post(endpoint_url, headers=headers, data=json.dumps(payload))
+    assert response.status_code == 400, 'Duplicate registration should be rejected'
+# ```
+# 
+# This test function first sends a POST request to the '/register' endpoint to register a user with a specific email and password. It then sends a second POST request with the same email and password. The test asserts that the first registration should be successful (HTTP status code 201) and the second registration should be rejected (HTTP status code 400).
 
-    # First registration
+# Here is a Python pytest test function using the requests library:
+# 
+# ```python
+import pytest
+import requests
+# 
+def test_password_length(access_token):
+    url = get_endpoint_url('/register')
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json'
+    }
+    data = {
+        'email': 'test@example.com',
+        'password': 'short'
+    }
     response = requests.post(url, headers=headers, json=data)
+    assert response.status_code == 400, "Expected status code 400, but got {}".format(response.status_code)
+```
+
+# This test function sends a POST request to the '/register' endpoint with a password that is less than 8 characters long. It then checks if the response status code is 400, which indicates that the input is invalid. The 'access_token' is used in the Authorization header. The 'get_endpoint_url' function is used to construct the full endpoint URL.
+
+# Here is a Python pytest test function using the requests library:
+# 
+# ```python
+import pytest
+import requests
+import json
+# 
+def test_registration_missing_field(access_token):
+    # Construct the endpoint URL
+    endpoint_url = get_endpoint_url('/register')
+
+    # Define the headers
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json'
+    }
+# 
+    # Define the payload with missing field
+    payload = {
+        'email': 'test@example.com',
+    }
+# 
+    # Send the POST request
+    response = requests.post(endpoint_url, headers=headers, data=json.dumps(payload))
+# 
+    # Assert that the response status code is 400
+    assert response.status_code == 400, f'Expected status code 400, but got {response.status_code}'
+# ```
+# 
+# In this test function, we are sending a POST request to the '/register' endpoint with a payload that is missing the 'password' field. According to the OpenAPI spec, this should result in a 400 Bad Request response. The test function asserts that the response status code is indeed 400. If it's not, the test will fail and print a message indicating the actual status code received.
+
+# Here is a Python pytest test function using the requests library:
+# 
+# ```python
+import pytest
+import requests
+import json
+# 
+def test_user_registration(access_token):
+    # Define the endpoint path
+    path = '/register'
+
+    # Construct the full endpoint URL
+    url = get_endpoint_url(path)
+# 
+    # Define the request headers
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json'
+    }
+# 
+    # Define the request body
+    body = {
+        'email': 'test@example.com',
+        'password': 'testpassword'
+    }
+# 
+    # Send the POST request
+    response = requests.post(url, headers=headers, data=json.dumps(body))
+# 
+    # Assert that the response status code is 201 (Created)
     assert response.status_code == 201
+# 
+    # Assert that the response body contains a user ID
+    response_body = response.json()
+    assert 'id' in response_body
+# ```
+# 
+# This test function sends a POST request to the '/register' endpoint with a JSON body containing an email and password. It then checks that the response status code is 201 (Created) and that the response body contains a user ID. The 'access_token' pytest fixture is used to provide a valid token for the 'Authorization' header.
 
-    # Duplicate registration
-    response = requests.post(url, headers=headers, json=data)
+# Here is a Python pytest test function using the requests library:
+# 
+# ```python
+import pytest
+import requests
+# 
+def test_password_not_in_response(access_token):
+    # Construct the endpoint URL
+    endpoint_url = get_endpoint_url('/register')
+
+    # Define the headers
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json'
+    }
+# 
+    # Define the payload
+    payload = {
+        'email': 'test@example.com',
+        'password': 'test_password'
+    }
+# 
+    # Send the POST request
+    response = requests.post(endpoint_url, headers=headers, json=payload)
+# 
+    # Assert that the response status code is 201 (Registration successful)
+    assert response.status_code == 201
+# 
+    # Assert that 'password' is not in the response
+    assert 'password' not in response.json()
+# ```
+# 
+# This test function sends a POST request to the '/register' endpoint with a JSON payload containing 'email' and 'password'. It then checks that the response status code is 201 (indicating successful registration) and that 'password' is not included in the response.
+
+# Here is a Python pytest test function using the requests library:
+# 
+# ```python
+import pytest
+import requests
+import json
+# 
+def test_register_existing_email(access_token):
+    # Construct the endpoint URL
+    endpoint_url = get_endpoint_url('/register')
+
+    # Define the headers
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json'
+    }
+# 
+    # Define the request body
+    body = {
+        'email': 'existingemail@example.com',
+        'password': 'password123'
+    }
+# 
+    # Send the POST request
+    response = requests.post(endpoint_url, headers=headers, data=json.dumps(body))
+# 
+    # Assert that the response status code is 409 (Conflict)
+    assert response.status_code == 409, f'Expected status code 409, but got {response.status_code}'
+# ```
+# 
+# This test function sends a POST request to the '/register' endpoint with an existing email and checks if the response status code is 409 (Conflict). The 'access_token' fixture is used in the Authorization header. The 'get_endpoint_url' helper function is used to construct the full endpoint URL.
+
+# Here is a Python pytest test function using the requests library:
+# 
+# ```python
+import pytest
+import requests
+import json
+# 
+def test_registration_email_format(access_token):
+    # Construct the endpoint URL
+    url = get_endpoint_url('/register')
+
+    # Define the headers
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json'
+    }
+# 
+    # Define the payload with invalid email format
+    payload = {
+        'email': 'invalidemail',
+        'password': 'password123'
+    }
+# 
+    # Send the POST request
+    response = requests.post(url, headers=headers, data=json.dumps(payload))
+# 
+    # Assert that the response status code is 400 (Bad Request)
     assert response.status_code == 400
-# ```
-
-# This test function first sends a POST request to the `/register` endpoint to register a new user. It then sends the same request again to attempt to register a user with the same email address. The test asserts that the first request is successful (returns a 201 status code) and that the second request is unsuccessful (returns a 400 status code).
-
-# Please replace the `url` with the actual URL of your API. Also, please note that this test assumes that the API correctly implements the OpenAPI spec and returns a 400 status code for duplicate registrations. If the API behaves differently, you may need to adjust the test accordingly.
-
-# Here is a Python pytest test function using the requests library:
-
-# ```python
-import pytest
-import requests
-
-def test_password_length():
-    url = "http://localhost:8000/register"
-    headers = {'Content-Type': 'application/json'}
-    data = {
-        "email": "test@example.com",
-        "password": "short"
+# 
+    # Define the payload with valid email format
+    payload = {
+        'email': 'validemail@example.com',
+        'password': 'password123'
     }
-    response = requests.post(url, headers=headers, json=data)
-    assert response.status_code == 400, "Expected status code to be 400, but it was not"
-    assert "Invalid input" in response.text, "Expected 'Invalid input' in the response, but it was not"
-# ```
-
-# This test function sends a POST request to the "/register" endpoint with a password that is less than 8 characters long. It then checks if the status code of the response is 400 (which indicates a bad request) and if the response text contains the string "Invalid input". If either of these assertions fail, the test will fail.
-
-# Here is a Python pytest test function using the requests library:
-
-# ```python
-import pytest
-import requests
-
-def test_registration_missing_field():
-    url = "http://localhost:8000/register"
-    # Missing password field
-    data = {
-        "email": "test@example.com"
-    }
-    response = requests.post(url, json=data)
-
-    assert response.status_code == 400, "Expected status code 400, but got {}".format(response.status_code)
-# ```
-
-# This test function sends a POST request to the "/register" endpoint with a JSON body that is missing the "password" field. It then checks if the response status code is 400, which indicates a Bad Request. If the status code is not 400, the test fails and an assertion error is raised with a message indicating the actual status code.
-
-# Here is a Python pytest test function using the requests library:
-
-# ```python
-import pytest
-import requests
-import json
-
-def test_user_registration():
-    url = "http://localhost:5000/register"
-    headers = {'Content-Type': 'application/json'}
-    data = {
-        "email": "testuser@example.com",
-        "password": "testpassword"
-    }
-    response = requests.post(url, headers=headers, data=json.dumps(data))
-
+# 
+    # Send the POST request
+    response = requests.post(url, headers=headers, data=json.dumps(payload))
+# 
+    # Assert that the response status code is 201 (Created)
     assert response.status_code == 201
-    assert 'id' in response.json()
 # ```
-
-# This test function sends a POST request to the "/register" endpoint with a JSON body containing an email and password. It then checks if the response status code is 201 (indicating successful creation) and if the response body contains a user ID.
-
-# Please replace "http://localhost:5000" with the actual base URL of your API.
-
-# Here is a Python pytest test function using the requests library:
-
-# ```python
-import pytest
-import requests
-import json
-
-def test_password_not_in_response():
-    url = "http://localhost:5000/register"  # replace with your actual API endpoint
-    headers = {'Content-Type': 'application/json'}
-    data = {
-        "email": "test@example.com",
-        "password": "testpassword"
-    }
-    response = requests.post(url, headers=headers, data=json.dumps(data))
-
-    assert response.status_code == 201, "Registration failed"
-
-    # Check if 'password' is in the response
-    assert 'password' not in response.json(), "Password should not be in the response"
-# ```
-
-# This test function sends a POST request to the `/register` endpoint with a sample email and password. It then checks if the response status code is 201 (indicating successful registration). Finally, it checks if the 'password' key is not present in the response JSON. If the 'password' key is present, the test will fail, indicating that the system is incorrectly returning passwords in the response.
-
-# Here is a Python pytest test function using the requests library:
-
-# ```python
-import pytest
-import requests
-
-def test_register_existing_email():
-    url = "http://localhost:5000/register"
-    existing_email = "test@example.com"
-    password = "password123"
-
-    # Assuming that the email is already registered
-    # This is just for the purpose of this test
-    # In a real-world scenario, you would need to ensure that the email is already registered before running this test
-
-    response = requests.post(url, json={"email": existing_email, "password": password})
-
-    assert response.status_code == 409, f"Expected status code 409, but got {response.status_code}"
-# ```
-
-# This test function sends a POST request to the `/register` endpoint with an email that is assumed to be already registered. It then checks if the status code of the response is 409 (Conflict), which indicates that the email is already registered. If the status code is not 409, the test fails and an assertion error is raised with a message indicating the actual status code.
-
-# Here is a Python pytest test function using the requests library that tests if the system rejects an invalid email format in the email field:
-
-# ```python
-import pytest
-import requests
-
-def test_invalid_email_format():
-    url = "http://localhost:5000/register"
-    headers = {'Content-Type': 'application/json'}
-    invalid_email_data = {"email": "invalidemail", "password": "password123"}
-
-    response = requests.post(url, headers=headers, json=invalid_email_data)
-
-    assert response.status_code == 400, "Expected status code 400, but got {}".format(response.status_code)
-# ```
-
-# This test function sends a POST request to the /register endpoint with an invalid email format in the request body. It then checks if the response status code is 400, which indicates that the server has rejected the request due to invalid input. If the status code is not 400, the test fails and prints an error message.
+# 
+# This test function first sends a POST request to the '/register' endpoint with an invalid email format and asserts that the response status code is 400 (Bad Request). Then, it sends another POST request with a valid email format and asserts that the response status code is 201 (Created). This way, it verifies that the system only accepts registrations where the email field follows a valid email format.

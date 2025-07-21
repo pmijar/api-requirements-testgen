@@ -25,8 +25,9 @@ api-testgen/
 │       └── test_register_generated.py
 │
 ├── .env                            # Contains your OpenAI API key
-├── generate_tests.py              # Main script to generate scenarios and tests
-├── requirements.txt               # Python dependencies
+├── generate_scenarios.py           # Main script to generate scenarios and tests
+├── generate_test_cases.py          # Main script to generate scenarios and tests
+├── requirements.txt                # Python dependencies
 └── README.md
 ```
 

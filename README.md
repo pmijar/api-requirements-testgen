@@ -83,12 +83,19 @@ OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 3. Run the generator:
 
 ```bash
-python generate_tests.py
+python generate_scenarios.py
 ```
 
 The script will:
-- Generate scenarios and save to `scenarios.txt`
-- Generate tests and save to `tests/<your_api_name>/test_<your_api_name>_generated.py`
+- Generate scenarios within the api named folder and save to `scenarios.txt`
+
+```bash
+python generate_test_cases.py
+```
+
+The script will:
+- Generate testcases and save to `tests/<your_api_name>/test_<your_api_name>_generated.py`
+
 
 ## 🧪 Run the Tests
 
